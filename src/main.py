@@ -10,6 +10,7 @@ import sys
 import torch as th
 from utils.logging import get_logger
 import yaml
+from pynvml import *
 
 from run import run
 
@@ -43,6 +44,16 @@ def open_yaml_file(path, config_name = None):
             assert False, "{}.yaml error: {}".format(config_name, exc)
     return config_dict
 
+
+def _get_gpu_id(params):
+    gpu_id = 0
+
+    for _i, _v in enumerate(params):
+        if _v.split("=")[0] == "--gpu_id":
+            gpu_id = _v.split("=")[1]
+            break
+
+    return gpu_id
 
 def _get_map_config(params):
     map_name = ""
@@ -111,6 +122,10 @@ if __name__ == '__main__':
     config_dict = recursive_dict_update(config_dict, alg_config)
     config_dict = recursive_dict_update(config_dict, map_config)
     config_dict["use_cuda"] = th.cuda.is_available()
+    config_dict["gpu_id"] = _get_gpu_id(params)
+
+    if th.cuda.is_available():
+        nvmlInit()
 
     # now add all the config to sacred
     ex.add_config(config_dict)
