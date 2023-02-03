@@ -110,6 +110,7 @@ if __name__ == '__main__':
     config_dict = recursive_dict_update(config_dict, env_config)
     config_dict = recursive_dict_update(config_dict, alg_config)
     config_dict = recursive_dict_update(config_dict, map_config)
+    config_dict["use_cuda"] = th.cuda.is_available()
 
     # now add all the config to sacred
     ex.add_config(config_dict)
