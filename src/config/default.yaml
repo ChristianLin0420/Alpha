@@ -1,6 +1,7 @@
 # --- Defaults ---
+experiment: 1
 
-# --- pymarl options ---
+# --- options ---
 runner: "episode" # Runs 1 env for an episode
 mac: "basic_mac" # Basic controller
 env: "sc2" # Environment name
@@ -13,7 +14,7 @@ log_interval: 2000 # Log summary of stats after every {} timesteps
 runner_log_interval: 2000 # Log runner stats (not test stats) every {} timesteps
 learner_log_interval: 2000 # Log training stats every {} timesteps
 t_max: 10000 # Stop running after this many timesteps
-use_cuda: True # Use gpu by default unless it isn't available
+use_cuda: False # Use gpu by default unless it isn't available
 buffer_cpu_only: True # If true we won't keep all of the replay buffer in vram
 
 # --- Logging options ---
@@ -28,7 +29,7 @@ local_results_path: "results" # Path for local results
 
 # --- RL hyperparameters ---
 gamma: 0.99
-batch_size: 32 # Number of episodes to train on
+batch_size: 16 # Number of episodes to train on
 buffer_size: 32 # Size of the replay buffer
 lr: 0.0005 # Learning rate for agents
 critic_lr: 0.0005 # Learning rate for critics
