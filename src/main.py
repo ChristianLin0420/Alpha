@@ -67,7 +67,7 @@ def _get_map_config(params):
 
     map_config = {
         "map_name": map_name,
-        "t_max": map_train_t[map_name] // 50000
+        "t_max": map_train_t[map_name]
     }
 
     return map_config
