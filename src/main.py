@@ -45,29 +45,25 @@ def open_yaml_file(path, config_name = None):
     return config_dict
 
 
-def _get_gpu_id(params):
-    gpu_id = 0
-
+def _get_val_by_argument(params, argument):
     for _i, _v in enumerate(params):
-        if _v.split("=")[0] == "--gpu_id":
-            gpu_id = _v.split("=")[1]
-            break
+        if _v.split("=")[0] == argument:
+            return _v.split("=")[1]
 
-    return gpu_id
+def _get_gpu_id(params):
+    return _get_val_by_argument(params, "--gpu_id")
 
 def _get_map_config(params):
-    map_name = ""
-
-    for _i, _v in enumerate(params):
-        if _v.split("=")[0] == "--map_name":
-            map_name = _v.split("=")[1]
-            break
-
-    map_train_t = open_yaml_file(os.path.join(os.path.dirname(__file__), "config", "map.yaml"), "map_config")
+    map_name = _get_val_by_argument(params, "--map_name")
+    map_train_traintime = open_yaml_file(os.path.join(os.path.dirname(__file__), "config", "map_traintime.yaml"), "map_traintime_config")
+    map_train_attribute = open_yaml_file(os.path.join(os.path.dirname(__file__), "config", "map_attributes.yaml"), "map_attributes_config")
 
     map_config = {
         "map_name": map_name,
-        "t_max": map_train_t[map_name]
+        "t_max": 100, #map_train_traintime[map_name],
+        "ally_num": map_train_attribute[map_name][0],
+        "enemy_num": map_train_attribute[map_name][1],
+        "token_dim": map_train_attribute[map_name][2]
     }
 
     return map_config
@@ -121,6 +117,7 @@ if __name__ == '__main__':
     config_dict = recursive_dict_update(config_dict, env_config)
     config_dict = recursive_dict_update(config_dict, alg_config)
     config_dict = recursive_dict_update(config_dict, map_config)
+    config_dict["agent"] = _get_val_by_argument(params, "--agent")
     config_dict["use_cuda"] = th.cuda.is_available()
     config_dict["gpu_id"] = _get_gpu_id(params)
 

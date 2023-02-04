@@ -39,10 +39,18 @@ optim_eps: 0.00001 # RMSProp epsilon
 grad_norm_clip: 10 # Reduce magnitude of gradients above this L2 norm
 
 # --- Agent parameters ---
-agent: "rnn" # Default rnn agent
+agent: "updet" # Default rnn agent
 rnn_hidden_dim: 64 # Size of hidden state for default rnn agent
 obs_agent_id: True # Include the agent's one_hot id in the observation
 obs_last_action: True # Include the agent's last action (one_hot) in the observation
+
+# --- Transformer parameters. Should be set manually. ---
+token_dim: 5 # Marines. For other unit type (e.g. Zeolot) this number can be different (6).
+emb: 32 # embedding dimension of transformer
+heads: 3 # head number of transformer
+depth: 2 # block number of transformer
+ally_num: 5 # number of ally (5m_vs_6m)
+enemy_num: 6 # number of enemy (5m_vs_6m)
 
 # --- Experiment running params ---
 repeat_id: 1
