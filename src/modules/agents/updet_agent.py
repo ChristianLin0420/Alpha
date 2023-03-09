@@ -169,25 +169,3 @@ def mask_(matrices, maskval=0.0, mask_diagonal=True):
     b, h, w = matrices.size()
     indices = torch.triu_indices(h, w, offset=0 if mask_diagonal else 1)
     matrices[:, indices[0], indices[1]] = maskval
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Unit Testing')
-    parser.add_argument('--token_dim', default='5', type=int)
-    parser.add_argument('--emb', default='32', type=int)
-    parser.add_argument('--heads', default='3', type=int)
-    parser.add_argument('--depth', default='2', type=int)
-    parser.add_argument('--ally_num', default='5', type=int)
-    parser.add_argument('--enemy_num', default='5', type=int)
-    parser.add_argument('--episode', default='20', type=int)
-    args = parser.parse_args()
-
-
-    # testing the agent
-    agent = UPDeT(None, args).cuda()
-    hidden_state = agent.init_hidden().cuda().expand(args.ally_num, 1, -1)
-    tensor = torch.rand(args.ally_num, args.ally_num+args.enemy_num, args.token_dim).cuda()
-    q_list = []
-    for _ in range(args.episode):
-        q, hidden_state = agent.forward(tensor, hidden_state, args.ally_num, args.enemy_num)
-        q_list.append(q)

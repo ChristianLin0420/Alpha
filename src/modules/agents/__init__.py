@@ -6,4 +6,7 @@ REGISTRY["rnn"] = RNNAgent
 from .updet_agent import UPDeT
 REGISTRY['updet'] = UPDeT
 
-TRANFORMER_BASED_AGENTS = ['updet']
+from .autoencoder_agent_v0 import AutoencoderV0
+REGISTRY['autoencoderv0'] = AutoencoderV0
+
+TRANFORMER_BASED_AGENTS = ['updet', 'autoencoderv0']
