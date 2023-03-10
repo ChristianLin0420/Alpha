@@ -8,6 +8,7 @@ class LinearLayerAutoEncoder(nn.Module):
         super().__init__()
 
         self.input_dim = args.max_input_dim
+        self.args = args
 
         self.encoder = nn.Sequential(
             nn.Linear(self.input_dim, 128),
