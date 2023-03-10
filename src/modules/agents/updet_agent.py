@@ -15,7 +15,7 @@ class UPDeT(nn.Module):
         # make hidden states on same device as model
         return torch.zeros(1, self.args.emb).to(self.args.device)
 
-    def forward(self, inputs, hidden_state, task_enemy_num, task_ally_num):
+    def forward(self, inputs, hidden_state):
         outputs, _ = self.transformer.forward(inputs, hidden_state, None)
         # first output for 6 action (no_op stop up down left right)
         q_basic_actions = self.q_basic(outputs[:, 0, :])
@@ -26,7 +26,7 @@ class UPDeT(nn.Module):
         q_enemies_list = []
 
         # each enemy has an output Q
-        for i in range(task_enemy_num):
+        for i in range(self.args.enemy_num):
             q_enemy = self.q_basic(outputs[:, 1 + i, :])
             q_enemy_mean = torch.mean(q_enemy, 1, True)
             q_enemies_list.append(q_enemy_mean)

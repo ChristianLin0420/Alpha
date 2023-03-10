@@ -1,5 +1,5 @@
 from modules.agents import REGISTRY as agent_REGISTRY
-from modules.agents import TRANFORMER_BASED_AGENTS
+from modules.agents import TRANFORMER_BASED_AGENTS, AUTOENCODER_BASED_AGENTS
 from components.action_selectors import REGISTRY as action_REGISTRY
 import torch as th
 
@@ -17,12 +17,17 @@ class BasicMAC:
 
         self.hidden_states = None
 
-    def select_actions(self, ep_batch, t_ep, t_env, bs=slice(None), test_mode=False):
+    def select_actions(self, ep_batch, t_ep, t_env, bs=slice(None), test_mode=False, padding=False):
         # Only select actions for the selected batch elements in bs
         avail_actions = ep_batch["avail_actions"][:, t_ep]
-        agent_outputs = self.forward(ep_batch, t_ep, test_mode=test_mode)
-        chosen_actions = self.action_selector.select_action(agent_outputs[bs], avail_actions[bs], t_env, test_mode=test_mode)
-        return chosen_actions
+        if self.args.agent in AUTOENCODER_BASED_AGENTS:
+            agent_outputs, reconstruction_loss = self.forward(ep_batch, t_ep, test_mode=test_mode)
+            chosen_actions = self.action_selector.select_action(agent_outputs[bs], avail_actions[bs], t_env, test_mode=test_mode, padding=padding)
+            return chosen_actions, reconstruction_loss
+        else:
+            agent_outputs = self.forward(ep_batch, t_ep, test_mode=test_mode)
+            chosen_actions = self.action_selector.select_action(agent_outputs[bs], avail_actions[bs], t_env, test_mode=test_mode, padding=padding)
+            return chosen_actions
 
     def forward(self, ep_batch, t, test_mode=False):
         # rnn based agent
@@ -57,9 +62,13 @@ class BasicMAC:
         # transformer based agent
         else:
             agent_inputs = self._build_inputs_transformer(ep_batch, t)
-            agent_outs, self.hidden_states = self.agent(agent_inputs,
-                                                           self.hidden_states.reshape(-1, 1, self.args.emb),
-                                                           self.args.enemy_num, self.args.ally_num)
+            agent_inputs = self._inputs_padding(agent_inputs)
+
+            if self.args.agent not in AUTOENCODER_BASED_AGENTS:
+                agent_outs, self.hidden_states = self.agent(agent_inputs, self.hidden_states.reshape(-1, 1, self.args.emb))
+            else:
+                agent_outs, self.hidden_states, reconstruction_loss = self.agent(agent_inputs, self.hidden_states.reshape(-1, 1, self.args.hidden_size))
+                return agent_outs.view(ep_batch.batch_size, self.n_agents, -1), reconstruction_loss
 
         return agent_outs.view(ep_batch.batch_size, self.n_agents, -1)
 
@@ -114,6 +123,16 @@ class BasicMAC:
         reshaped_obs = arranged_obs.view(-1, 1 + (self.args.enemy_num - 1) + self.args.ally_num, self.args.token_dim)
         inputs.append(reshaped_obs)
         inputs = th.cat(inputs, dim=1).to(self.args.device)
+        return inputs
+
+    def _inputs_padding(self, inputs):
+        b, t, e = inputs.size()
+
+        ally_padding = th.zeros(b, self.args.max_ally_num - self.args.ally_num, e).to(self.args.device)
+        enemy_padding = th.zeros(b, self.args.max_enemy_num - self.args.enemy_num, e).to(self.args.device)
+
+        inputs = th.cat([inputs[:, :self.args.ally_num, :], ally_padding, inputs[:, self.args.ally_num:, :], enemy_padding], dim=1)
+
         return inputs
 
     def _get_input_shape(self, scheme):

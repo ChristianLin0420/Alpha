@@ -1,6 +1,7 @@
 from envs import REGISTRY as env_REGISTRY
 from functools import partial
 from components.episode_buffer import EpisodeBatch
+from modules.agents import AUTOENCODER_BASED_AGENTS
 import numpy as np
 
 
@@ -64,16 +65,27 @@ class EpisodeRunner:
 
             # Pass the entire batch of experiences up till now to the agents
             # Receive the actions for each agent at this timestep in a batch of size 1
-            actions = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode)
+            if self.args.agent not in AUTOENCODER_BASED_AGENTS:
+                actions = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode, padding=self.args.padding)
+            else:
+                actions, reconsruction_loss = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode, padding=self.args.padding)
 
             reward, terminated, env_info = self.env.step(actions[0])
             episode_return += reward
 
-            post_transition_data = {
-                "actions": actions,
-                "reward": [(reward,)],
-                "terminated": [(terminated != env_info.get("episode_limit", False),)],
-            }
+            if self.args.agent not in AUTOENCODER_BASED_AGENTS:
+                post_transition_data = {
+                    "actions": actions,
+                    "reward": [(reward,)],
+                    "terminated": [(terminated != env_info.get("episode_limit", False),)],
+                }
+            else:
+                post_transition_data = {
+                    "actions": actions,
+                    "reconstruction": reconsruction_loss,
+                    "reward": [(reward,)],
+                    "terminated": [(terminated != env_info.get("episode_limit", False),)],
+                }
 
             self.batch.update(post_transition_data, ts=self.t)
 
@@ -87,7 +99,10 @@ class EpisodeRunner:
         self.batch.update(last_data, ts=self.t)
 
         # Select actions in the last stored state
-        actions = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode)
+        if self.args.agent not in AUTOENCODER_BASED_AGENTS:
+            actions = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode, padding=self.args.padding)
+        else:
+            actions, reconsruction_loss = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode, padding=self.args.padding)
         self.batch.update({"actions": actions}, ts=self.t)
 
         cur_stats = self.test_stats if test_mode else self.train_stats

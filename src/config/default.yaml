@@ -1,5 +1,5 @@
 # --- Defaults ---
-experiment: 1
+experiment: 0
 
 # --- options ---
 runner: "episode" # Runs 1 env for an episode
@@ -43,6 +43,14 @@ agent: "updet" # Default rnn agent
 rnn_hidden_dim: 64 # Size of hidden state for default rnn agent
 obs_agent_id: True # Include the agent's one_hot id in the observation
 obs_last_action: True # Include the agent's last action (one_hot) in the observation
+
+max_ally_num: 30
+max_enemy_num: 70
+max_input_dim: 500
+max_action_size: 70
+hidden_size: 64
+padding: True
+reconstruction_lambda: 0.001
 
 # --- Transformer parameters. Should be set manually. ---
 token_dim: 5 # Marines. For other unit type (e.g. Zeolot) this number can be different (6).

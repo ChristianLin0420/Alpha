@@ -4,6 +4,7 @@ from modules.mixers.vdn import VDNMixer
 from modules.mixers.qmix import QMixer
 import torch as th
 from torch.optim import RMSprop
+from modules.agents import AUTOENCODER_BASED_AGENTS
 
 
 class QLearner:
@@ -42,12 +43,16 @@ class QLearner:
         mask = batch["filled"][:, :-1].float()
         mask[:, 1:] = mask[:, 1:] * (1 - terminated[:, :-1])
         avail_actions = batch["avail_actions"]
+        reconstruction = batch["reconstruction"][:, :-1].squeeze(-1)
 
         # Calculate estimated Q-Values
         mac_out = []
         self.mac.init_hidden(batch.batch_size)
         for t in range(batch.max_seq_length):
-            agent_outs = self.mac.forward(batch, t=t)
+            if self.args.agent not in AUTOENCODER_BASED_AGENTS:
+                agent_outs = self.mac.forward(batch, t=t)
+            else:
+                agent_outs, _ = self.mac.forward(batch, t=t)
             mac_out.append(agent_outs)
         mac_out = th.stack(mac_out, dim=1)  # Concat over time
 
@@ -58,11 +63,19 @@ class QLearner:
         target_mac_out = []
         self.target_mac.init_hidden(batch.batch_size)
         for t in range(batch.max_seq_length):
-            target_agent_outs = self.target_mac.forward(batch, t=t)
+            if self.args.agent not in AUTOENCODER_BASED_AGENTS:
+                target_agent_outs = self.mac.forward(batch, t=t)
+            else:
+                target_agent_outs, _ = self.mac.forward(batch, t=t)
             target_mac_out.append(target_agent_outs)
 
         # We don't need the first timesteps Q-Value estimate for calculating targets
         target_mac_out = th.stack(target_mac_out[1:], dim=1)  # Concat across time
+
+        if self.args.padding:
+            b, t, a, e = avail_actions.size()
+            padding_action = th.zeros(b, t, a, self.args.max_action_size - e, dtype=th.float32)
+            avail_actions = th.cat([avail_actions, padding_action], dim=-1)
 
         # Mask out unavailable actions
         target_mac_out[avail_actions[:, 1:] == 0] = -9999999
@@ -92,6 +105,10 @@ class QLearner:
 
         # 0-out the targets that came from padded data
         masked_td_error = td_error * mask
+
+        if self.args.agent in AUTOENCODER_BASED_AGENTS:
+            reconstruction = th.mean(reconstruction.to(th.float64), dim=-1, keepdim=True)
+            masked_td_error += reconstruction
 
         # Normal L2 loss, take mean over actual data
         loss = (masked_td_error ** 2).sum() / mask.sum()

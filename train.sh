@@ -3,9 +3,9 @@ export CUDA_VISIBLE_DEVICES=0,1
 
 train_count=1
 train_index=0
-agent='updet'
+agent='autoencoderv0'
 mixers='vdn'
-maps='1c3s5z 2s3z 3m 8m 3s_vs_3z'
+maps='1c3s5z'
 gpu_id=0
 
 ### 1c3s5z 2s3z 3m 8m 3s_vs_3z 

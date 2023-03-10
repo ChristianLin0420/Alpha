@@ -41,7 +41,12 @@ class EpsilonGreedyActionSelector():
                                               decay="linear")
         self.epsilon = self.schedule.eval(0)
 
-    def select_action(self, agent_inputs, avail_actions, t_env, test_mode=False):
+    def select_action(self, agent_inputs, avail_actions, t_env, test_mode=False, padding=False):
+
+        if padding:
+            b, t, e = avail_actions.size()
+            padding_action = th.zeros(b, t, self.args.max_action_size - e, dtype=th.float32)
+            avail_actions = th.cat([avail_actions, padding_action], dim=-1)
 
         # Assuming agent_inputs is a batch of Q-Values for each agent bav
         self.epsilon = self.schedule.eval(t_env)

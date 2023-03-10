@@ -60,7 +60,7 @@ def _get_map_config(params):
 
     map_config = {
         "map_name": map_name,
-        "t_max": 100, #map_train_traintime[map_name],
+        "t_max": map_train_traintime[map_name],
         "ally_num": map_train_attribute[map_name][0],
         "enemy_num": map_train_attribute[map_name][1],
         "token_dim": map_train_attribute[map_name][2]
